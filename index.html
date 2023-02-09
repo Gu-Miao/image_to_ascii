@@ -8,8 +8,20 @@
     <link rel="stylesheet" href="/www/index.less" />
   </head>
   <body>
-    <canvas></canvas>
-    <pre></pre>
+    <h1>Image to ascii</h1>
+    <p>The higher the quality, the greater the ascii. 质量越高，ascii码图像越大。</p>
+    <p>Recommended for use with browser zoom function. 建议配合浏览器缩放功能使用。</p>
+    <div class="row">
+      <label for="quality">quality: </label>
+      <input type="range" id="quality" min="0" max="100" value="100" step="1" />
+      <span id="quality-value">100%</span>
+    </div>
+    <div class="row">
+      <input type="file" id="file" accept="image/*" />
+    </div>
+    <div class="row">
+      <pre id="preview"></pre>
+    </div>
     <script type="module" src="/www/index.ts"></script>
   </body>
 </html>

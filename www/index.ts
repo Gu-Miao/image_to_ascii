@@ -1,37 +1,69 @@
-const pre = document.querySelector('pre') as HTMLPreElement
-const canvas = document.querySelector('canvas') as HTMLCanvasElement
-const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+const qualityInput = document.getElementById('quality') as HTMLInputElement
+const qualityValue = document.getElementById('quality-value') as HTMLSpanElement
+const fileInput = document.getElementById('file') as HTMLInputElement
+const pre = document.getElementById('preview') as HTMLPreElement
 
-const img = new Image()
-img.src = '/fighter_nenmaster_neo_buff.img/10.png'
-img.onload = () => {
-  canvas.width = img.width
-  canvas.height = img.height
-  ctx.drawImage(img, 0, 0)
+type Options = {
+  quality?: number
+}
+
+qualityInput.addEventListener('input', handleQualityChange)
+qualityInput.addEventListener('change', handleFileChange)
+
+fileInput.addEventListener('change', handleFileChange)
+
+function handleQualityChange() {
+  qualityValue.innerHTML = qualityInput.value + '%'
+}
+
+async function handleFileChange() {
+  const file = (fileInput.files as FileList)[0]
+  const base64 = await readyAsBase64(file)
+  const image = new Image()
+  image.src = base64
+  image.onload = () => {
+    pre.innerHTML = getAscii(image, { quality: +qualityInput.value / 100 })
+    console.log(1)
+  }
+}
+
+function readyAsBase64(file: File): Promise<string> {
+  return new Promise((reslove, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => reslove(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+function getAscii(image: HTMLImageElement, options: Options = {}) {
+  const { quality = 1 } = options
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+
+  canvas.width = image.width * quality
+  canvas.height = image.height * quality
+
+  ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height)
+
   const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const data = imgData.data
 
-  console.log(imgData)
+  const arr = ['M', 'B', 'O', 'I', '#', '?', '+', '}', ':', ',', '.', ' ']
+  const lr = 255 / arr.length + 1
+  const text: string[] = []
 
-  // 1.浮点算法：Gray=R0.3+G0.59+B*0.11
-  // 2.整数方法：Gray=(R30+G59+B*11)/100
-  // 3.移位方法：Gray =(R76+G151+B*28)>>8;
-  // 4.平均值法：Gray=（R+G+B）/3;
-  // 5.仅取绿色：Gray=G；
-
-  const arr = ['M', 'N', 'H', 'Q', '$', 'O', 'C', '?', '7', '>', '!', ':', '–', ';', '.']
-  const text = []
   for (let i = 0; i <= data.length; i += 4) {
-    const avg = (((data[i] + data[i + 1] + data[i + 2]) / 3) * data[i + 3]) / 255
-    const char = arr[Math.floor(avg / 18)]
+    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3
+    const char = arr[Math.floor(avg / lr)]
     text.push(char)
 
-    if (i % (img.width * 4) === 0 && i !== 0) {
+    if (i % (canvas.width * 4) === 0 && i !== 0) {
       text.push('\n')
     }
   }
 
-  pre.innerHTML = text.join('')
+  canvas.remove()
 
-  ctx.putImageData(imgData, 0, 0)
+  return text.join('')
 }
